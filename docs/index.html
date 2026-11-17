@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}</style>
+<title>AI DPO</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Commissioner:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a single reading column like a regulator's dossier, with article numbers set in mono as the recurring detail */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --fg:#14202e; --muted:#5a6676; --line:#d9dee6;
+  --accent:#1d4ed8; --accent-soft:#e3eafc;
+  --high:#b42318; --high-bg:#fdecea; --mid:#a15c07; --mid-bg:#fdf3e2; --low:#1f7a4d; --low-bg:#e5f4ec; --ban:#5b1a8a; --ban-bg:#f1e7f9;
+  --display:"Literata",Georgia,"Times New Roman",serif;
+  --body:"Commissioner","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e141c; --surface:#151d28; --fg:#e6ebf2; --muted:#9aa6b6; --line:#2a3646;
+  --accent:#7aa2ff; --accent-soft:#1c2a47;
+  --high:#ff8a7d; --high-bg:#3a1714; --mid:#f2b45a; --mid-bg:#33240c; --low:#6fd3a0; --low-bg:#0f2c1f; --ban:#d0a2ff; --ban-bg:#2b1640; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141c; --surface:#151d28; --fg:#e6ebf2; --muted:#9aa6b6; --line:#2a3646;
+  --accent:#7aa2ff; --accent-soft:#1c2a47;
+  --high:#ff8a7d; --high-bg:#3a1714; --mid:#f2b45a; --mid-bg:#33240c; --low:#6fd3a0; --low-bg:#0f2c1f; --ban:#d0a2ff; --ban-bg:#2b1640; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:860px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(2.2rem,6vw,3.2rem);font-weight:700}
+h2{font-size:1.5rem;font-weight:700}
+h3{font-size:1.05rem;font-family:var(--body);font-weight:600}
+p{margin:0;max-width:65ch}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+header{display:flex;flex-direction:column;gap:14px;border-bottom:1px solid var(--line);padding-bottom:28px}
+.lede{font-size:1.15rem;color:var(--fg)}
+.pitch{font-family:var(--display);font-size:1.2rem;border-left:3px solid var(--accent);padding:6px 0 6px 16px;max-width:60ch}
+section{display:flex;flex-direction:column;gap:16px}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.feat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.feat p{color:var(--muted);font-size:.95rem}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.92rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+.art{font-family:var(--mono);font-size:.8rem;color:var(--accent);white-space:nowrap}
+.pill{display:inline-block;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ban{color:var(--ban);background:var(--ban-bg)}.p-high{color:var(--high);background:var(--high-bg)}.p-mid{color:var(--mid);background:var(--mid-bg)}.p-low{color:var(--low);background:var(--low-bg)}
+.note{font-size:.85rem;color:var(--muted)}
+ol.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:2.2rem 1fr;gap:12px;align-items:start}
+ol.steps li::before{content:counter(s);font-family:var(--mono);font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:6px;text-align:center;padding:2px 0}
+.tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.tier{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.tier.pro{border-color:var(--accent)}
+ul{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:4px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.box{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--surface);display:flex;flex-direction:column;gap:8px;min-width:0}
+.box.warn{border-color:var(--high)}
+.team td:first-child{font-weight:600;white-space:nowrap}
+footer{border-top:1px solid var(--line);padding-top:16px;font-size:.85rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Gen AI Summit Hackathon · Athens · 14–15/11/2026 · Voice &amp; Enterprise Agents</span>
+  <h1>AI DPO</h1>
+  <p class="lede">Agent συμμόρφωσης με το EU AI Act και το GDPR. Δώσε τον κλάδο σου ή το site σου και μάθε σε 30 δευτερόλεπτα τι ρισκάρεις και τι πρέπει να κάνεις.</p>
+  <p class="pitch">«Το AI Act είναι νόμος. Οι περισσότερες εταιρείες δεν ξέρουν αν τις αφορά.»</p>
+</header>
+
+<section>
+  <span class="eyebrow">Το πρόβλημα</span>
+  <h2>Νέος νόμος, καμία γνώση</h2>
+  <p>Οι εταιρείες χρησιμοποιούν ήδη AI: chatbots, ανάλυση βιογραφικών, triage, αυτόματα emails. Δεν ξέρουν ποια χρήση είναι απαγορευμένη, ποια είναι υψηλού κινδύνου και τι πρέπει να έχει έτοιμο ο DPO. Ένας DPO κοστίζει, και οι μικρές εταιρείες συνήθως δεν έχουν.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Τι κάνει</span>
+  <h2>Έξι λειτουργίες</h2>
+  <div class="features">
+    <div class="feat"><h3>«Τι είμαι εγώ;»</h3><p>Κλάδος ή ΚΑΔ → 10 τυπικά use cases AI, με δεδομένα, ποιος μιλά με το σύστημα, κατηγορία κινδύνου και 4–5 ενέργειες για τον DPO.</p></div>
+    <div class="feat"><h3>Σενάρια ανά κλάδο</h3><p>Π.χ. νοσοκομείο: ο agent κάνει escalation σε τμήματα. Εντοπίζει πού στέλνονται δεδομένα υγείας χωρίς νομική βάση και πώς διορθώνεται.</p></div>
+    <div class="feat"><h3>Ο νόμος ως πηγή (RAG)</h3><p>AI Act και GDPR. Κάθε απάντηση παραπέμπει σε άρθρο. Ενημερώνεται όταν αλλάζει ο νόμος.</p></div>
+    <div class="feat"><h3>Έλεγχος site με URL</h3><p>Δωρεάν γρήγορο scan, premium έλεγχος σε βάθος με αναφορά έτοιμη για τον DPO.</p></div>
+    <div class="feat"><h3>Πόσο κρατάω, πότε σβήνω</h3><p>Ανά ΚΑΔ: πόσα χρόνια πρέπει να κρατάς ιστορικό πελατών, ιατρικούς φακέλους, παραστατικά και βίντεο, και πότε πρέπει να καταστραφούν. Υπενθύμιση όταν λήγει η προθεσμία.</p></div>
+    <div class="feat"><h3>Agent προς ενοικίαση</h3><p>SaaS και agent-to-agent: μια τράπεζα δίνει την αρχιτεκτονική της μέσω API και παίρνει πίσω την αξιολόγηση.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Παράδειγμα εξόδου · πάροχος υγείας</span>
+  <h2>«Είμαι πάροχος υγείας»</h2>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Use case</th><th>Δεδομένα</th><th>Κίνδυνος</th><th>Βάση</th><th>Πρώτη ενέργεια</th></tr></thead>
+    <tbody>
+      <tr><td>Triage επειγόντων και dispatch ασθενών</td><td>Υγείας, ΑΜΚΑ</td><td><span class="pill p-high">Υψηλός</span></td><td class="art">AI Act Παρ. III §5(δ) · GDPR 9</td><td>Ανθρώπινη εποπτεία, αξιολόγηση κινδύνου, αρχείο καταγραφής</td></tr>
+      <tr><td>Agent που κάνει escalation σε τμήματα</td><td>Υγείας</td><td><span class="pill p-high">Έλεγχος GDPR</span></td><td class="art">GDPR 5(1)(γ) · 9 · 32</td><td>Μόνο τα απαραίτητα δεδομένα ανά τμήμα (ελαχιστοποίηση)</td></tr>
+      <tr><td>Chatbot ραντεβού στο site</td><td>Στοιχεία επικοινωνίας</td><td><span class="pill p-mid">Περιορισμένος</span></td><td class="art">AI Act 50</td><td>Δήλωση ότι ο χρήστης μιλά με AI</td></tr>
+      <tr><td>Screening βιογραφικών προσωπικού</td><td>Υποψηφίων</td><td><span class="pill p-high">Υψηλός</span></td><td class="art">AI Act Παρ. III §4</td><td>Έλεγχος μεροληψίας, ενημέρωση υποψηφίων</td></tr>
+      <tr><td>Ανάλυση συναισθημάτων εργαζομένων</td><td>Βιομετρικά, φωνή</td><td><span class="pill p-ban">Απαγορευμένο</span></td><td class="art">AI Act 5(1)(στ)</td><td>Άμεση διακοπή</td></tr>
+      <tr><td>Σύνοψη ιατρικού φακέλου για τον γιατρό</td><td>Υγείας</td><td><span class="pill p-mid">Εξαρτάται</span></td><td class="art">GDPR 9 · 28 · 35</td><td>DPIA, σύμβαση με τον πάροχο AI</td></tr>
+      <tr><td>Υπενθυμίσεις ραντεβού</td><td>Τηλέφωνο</td><td><span class="pill p-low">Ελάχιστος</span></td><td class="art">GDPR 6</td><td>Νομική βάση και opt-out</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Ενδεικτικό παράδειγμα για το demo. Η τελική ταξινόμηση εξαρτάται από την πραγματική χρήση. Δεν αποτελεί νομική συμβουλή. Πρόστιμα: AI Act έως 35 εκ. € ή 7% του τζίρου για απαγορευμένες πρακτικές (άρθρο 99), GDPR έως 20 εκ. € ή 4% (άρθρο 83).</p>
+</section>
+
+<section>
+  <span class="eyebrow">Διατήρηση και καταστροφή αρχείων</span>
+  <h2>Πόσα χρόνια κρατάω το ιστορικό πελατών;</h2>
+  <p>Το GDPR λέει «όσο χρειάζεται» (αρχή περιορισμού της αποθήκευσης). Πόσο ακριβώς χρειάζεται το ορίζει ο κλαδικός νόμος, άρα εξαρτάται από τον ΚΑΔ σου. Ο agent δείχνει τον χρόνο ανά κατηγορία δεδομένων και υπενθυμίζει πότε πρέπει να καταστραφούν.</p>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Κατηγορία δεδομένων</th><th>Ενδεικτικός χρόνος</th><th>Βάση</th><th>Μετά</th></tr></thead>
+    <tbody>
+      <tr><td>Ιατρικός φάκελος, ιδιωτικό ιατρείο</td><td>10 έτη</td><td class="art">ν. 3418/2005 άρθρο 14</td><td>Καταστροφή ή ανωνυμοποίηση</td></tr>
+      <tr><td>Ιατρικός φάκελος, κλινική ή νοσοκομείο</td><td>20 έτη</td><td class="art">ν. 3418/2005 άρθρο 14</td><td>Καταστροφή ή ανωνυμοποίηση</td></tr>
+      <tr><td>Τιμολόγια και λογιστικά βιβλία</td><td>5 έτη από το τέλος της χρήσης, περισσότερο όσο ο φορολογικός έλεγχος παραμένει ανοιχτός</td><td class="art">ν. 4308/2014 · ΚΦΔ</td><td>Καταστροφή</td></tr>
+      <tr><td>Βίντεο από κάμερες ασφαλείας</td><td>Λίγες ημέρες, συνήθως έως 15</td><td class="art">ΑΠΔΠΧ Οδηγία 1/2011 · GDPR 5(1)(ε)</td><td>Αυτόματη διαγραφή</td></tr>
+      <tr><td>Συναινέσεις και ιστορικό marketing</td><td>Όσο ισχύει η συναίνεση, μετά μόνο η απόδειξη ανάκλησης</td><td class="art">GDPR 7 · 17</td><td>Διαγραφή κατά την ανάκληση</td></tr>
+      <tr><td>Βιογραφικά υποψηφίων που δεν προσλήφθηκαν</td><td>Σύντομο διάστημα, κατά περίπτωση</td><td class="art">GDPR 5(1)(ε)</td><td>Διαγραφή, εκτός αν συναινέσουν σε μελλοντικές θέσεις</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Ενδεικτικοί χρόνοι για το demo. Επαληθεύονται ανά περίπτωση με τον DPO ή τον λογιστή. Δεν αποτελεί νομική συμβουλή.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Έλεγχος site</span>
+  <h2>Ένα URL, δύο επίπεδα</h2>
+  <div class="tiers">
+    <div class="tier"><h3>Δωρεάν</h3><ul><li>Google Fonts από servers της Google</li><li>Analytics και cookies πριν τη συναίνεση</li><li>Chatbot χωρίς δήλωση ότι είναι AI</li><li>Λείπει πολιτική απορρήτου ή DPO</li></ul></div>
+    <div class="tier pro"><h3>Premium</h3><ul><li>Έλεγχος σε βάθος με context: ποιος είναι ο πάροχος, ποια η νομική βάση</li><li>Ταξινόμηση κατά AI Act</li><li>Αναφορά για τον DPO με άρθρα</li><li>Επανέλεγχος κάθε μήνα</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Demo · 3 λεπτά</span>
+  <h2>Η ροή μπροστά στους κριτές</h2>
+  <ol class="steps">
+    <li><p>Επικολλάμε ένα πραγματικό URL. Σε 20 δευτερόλεπτα βγαίνουν ευρήματα live.</p></li>
+    <li><p>«Είμαι πάροχος υγείας»: 10 use cases με χρωματιστή ταξινόμηση και άρθρα.</p></li>
+    <li><p>Σενάριο νοσοκομείου: ο agent στέλνει δεδομένα υγείας σε λάθος τμήμα. Το AI DPO το εντοπίζει και δείχνει τη λύση.</p></li>
+    <li><p>Κλείσιμο: η ίδια αξιολόγηση διαθέσιμη ως API για τον agent μιας τράπεζας.</p></li>
+  </ol>
+</section>
+
+<section>
+  <span class="eyebrow">Γιατί εμείς</span>
+  <h2>Το έχουμε ζήσει</h2>
+  <ul>
+    <li>Κατεβάσαμε τοπικά τα Google Fonts για λόγους GDPR σε δικά μας sites.</li>
+    <li>Αυτόματος εβδομαδιαίος έλεγχος GDPR σε 7 sites, με κρίσιμα ευρήματα στο πρώτο run.</li>
+    <li>Η συνεργασία με DPO εντόπισε χρήση ανάλυσης συναισθημάτων, απαγορευμένη από το άρθρο 5.</li>
+  </ul>
+</section>
+
+<section>
+  <span class="eyebrow">Ομάδα · πρόταση</span>
+  <h2>Ποιος κάνει τι</h2>
+  <div class="tbl team">
+  <table>
+    <tbody>
+      <tr><td>Αθηνά</td><td>Product, ιστορία, pitch</td></tr>
+      <tr><td>Μαργαρίτα</td><td>Μηχανή use cases και UI (με βάση το blueprint AI CTO)</td></tr>
+      <tr><td>Άγγελος</td><td>Agents και RAG πάνω στο AI Act και το GDPR</td></tr>
+      <tr><td>Ράλντι</td><td>Έλεγχος site με URL</td></tr>
+      <tr><td>Μαρία</td><td>Δεδομένα demo, σενάριο νοσοκομείου, video</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Κανόνες για εμάς</span>
+  <div class="two">
+    <div class="box warn"><h3>Αποφεύγουμε</h3><ul><li>Σενάρια του τύπου «πλήρωσε ή σε καταγγέλλω». Κάθε εταιρεία ελέγχει το δικό της site.</li><li>«Θα πληρώσετε πρόστιμο Χ €». Γράφουμε «το άρθρο Υ προβλέπει έως…».</li><li>Αυτόματη ενημέρωση νόμου και πλήρες agent-to-agent μέσα στο hackathon. Τα αναφέρουμε ως επόμενο βήμα.</li></ul></div>
+    <div class="box"><h3>Προθεσμίες</h3><ul><li><strong>Κυρ 15/11 18:00</strong> code freeze: repo, demo video, περιγραφή</li><li>~19:00 pitch 3 λεπτών (8 ημιφιναλίστ)</li><li><strong>Δευ 16/11 18:00</strong> τελικός στο ΚΠΙΣΝ (4 φιναλίστ)</li></ul></div>
+  </div>
+</section>
+
+<footer>Repo: github.com/Athina87-search/genai-hackathon-2026 · Κριτήρια: usefulness, craft, aura points</footer>
+</div>
+</body>
+</html>
